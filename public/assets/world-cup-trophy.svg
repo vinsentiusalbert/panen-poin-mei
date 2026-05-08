@@ -1,0 +1,24 @@
+<svg width="360" height="520" viewBox="0 0 360 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gold" x1="60" y1="40" x2="290" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7E7A1"/>
+      <stop offset="0.28" stop-color="#D4AF37"/>
+      <stop offset="0.6" stop-color="#B68A1E"/>
+      <stop offset="1" stop-color="#7B5A12"/>
+    </linearGradient>
+    <linearGradient id="goldSoft" x1="120" y1="80" x2="250" y2="310" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF7D1" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#FFF7D1" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <g opacity="0.98">
+    <circle cx="190" cy="84" r="54" fill="url(#gold)"/>
+    <path d="M97 120C121 77 154 58 191 58C228 58 258 81 282 121C293 139 294 157 286 171C275 190 252 194 236 207C214 225 214 254 226 283C237 309 255 339 242 369C229 398 203 411 190 450C177 411 151 398 138 369C125 339 143 309 154 283C166 254 166 225 144 207C128 194 105 190 94 171C86 157 87 139 97 120Z" fill="url(#gold)"/>
+    <path d="M145 161C119 138 109 116 111 93C90 94 72 104 61 121C50 139 49 158 58 171C68 186 87 191 100 200C113 208 122 219 127 233C138 219 148 201 145 161Z" fill="url(#gold)"/>
+    <path d="M235 161C261 138 271 116 269 93C290 94 308 104 319 121C330 139 331 158 322 171C312 186 293 191 280 200C267 208 258 219 253 233C242 219 232 201 235 161Z" fill="url(#gold)"/>
+    <path d="M167 328C174 346 181 362 190 382C199 362 206 346 213 328C225 349 227 367 224 384C220 407 207 424 190 450C173 424 160 407 156 384C153 367 155 349 167 328Z" fill="#6F4F10"/>
+    <path d="M129 467C129 446 146 429 167 429H213C234 429 251 446 251 467V490H129V467Z" fill="#704E12"/>
+    <path d="M108 490H272C281 490 288 497 288 506C288 514 281 520 272 520H108C99 520 92 514 92 506C92 497 99 490 108 490Z" fill="#4C340C"/>
+    <path d="M154 116C171 98 200 94 222 107C237 116 247 134 249 153C252 184 236 208 213 227C203 235 196 247 192 258C188 247 181 235 171 227C148 208 132 184 135 153C137 138 144 126 154 116Z" fill="url(#goldSoft)"/>
+  </g>
+</svg>

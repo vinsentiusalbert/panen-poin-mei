@@ -1,0 +1,15 @@
+<svg width="320" height="320" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ketupatGreen" x1="58" y1="58" x2="262" y2="262" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#39B54A"/>
+      <stop offset="1" stop-color="#006838"/>
+    </linearGradient>
+  </defs>
+  <path d="M160 42L248 130L160 218L72 130L160 42Z" fill="url(#ketupatGreen)" fill-opacity="0.92"/>
+  <path d="M160 76L214 130L160 184L106 130L160 76Z" fill="#FAF9F6" fill-opacity="0.18"/>
+  <path d="M72 130L160 218L248 130" stroke="#FAF9F6" stroke-opacity="0.7" stroke-width="8"/>
+  <path d="M160 42V218" stroke="#FAF9F6" stroke-opacity="0.7" stroke-width="8"/>
+  <path d="M106 130H214" stroke="#FAF9F6" stroke-opacity="0.7" stroke-width="8"/>
+  <path d="M116 228L98 278" stroke="#D4AF37" stroke-width="10" stroke-linecap="round"/>
+  <path d="M204 228L222 278" stroke="#D4AF37" stroke-width="10" stroke-linecap="round"/>
+</svg>
