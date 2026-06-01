@@ -110,7 +110,7 @@ class PanenPoinController extends Controller
                 'nomor_hp_pelanggan' => $request->nomor_hp_pelanggan,
             ]);
             
-            return redirect()->route('panenpoin.index')
+            return redirect()->route('home')
                 ->with('success', 'Data pelanggan berhasil disimpan!');
         } catch (\Exception $e) {
             return redirect()->back()
@@ -668,7 +668,7 @@ class PanenPoinController extends Controller
                 ], $httpCode);
             }
 
-            return redirect()->route('panenpoin.index')
+            return redirect()->route('home')
                 ->with($status ? 'success' : 'error', $message);
         };
 
