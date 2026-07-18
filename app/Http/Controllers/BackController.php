@@ -32,7 +32,7 @@ class BackController extends Controller
             $user = Auth::user();
             $request->session()->regenerate();
             $email = strtolower($user->email_client ?? $user->email ?? '');
-            if ($email === 'ptsenabarokahmandiri@gmail.com') {
+            if ($email === 'arifasep@gmail.com') {
                 return redirect()->route('admin.redeems');
             }
             return redirect()->route('home'); // fallback
