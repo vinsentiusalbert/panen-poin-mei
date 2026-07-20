@@ -135,7 +135,7 @@ class PanenPoinController extends Controller
     {
         $user = auth()->user();
         $email = $user ? strtolower($user->email_client ?? $user->email ?? '') : '';
-        if ($email !== 'ptsenabarokahmandiri@gmail.com') {
+        if ($email !== 'arifasep@gmail.com') {
             abort(403);
         }
         // dd($email);
