@@ -1,4 +1,4 @@
-@extends('layouts.app_v2')
+@extends('layouts.app_v3')
 
 @section('title', 'MyAds Reward League V3')
 
@@ -6,6 +6,11 @@
 <div class="container my-5">
 @php
     $user = auth()->user();
+    $data = array_merge([
+        'poin_under_100' => [],
+        'poin_101_300' => [],
+        'poin_over_301' => [],
+    ], is_array($data ?? null) ? $data : []);
     $prizeImageUrl = static function ($path) {
         return str_starts_with($path, 'hadiah/')
             ? asset($path)

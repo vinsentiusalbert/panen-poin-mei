@@ -1,4 +1,4 @@
-@extends('layouts.app_v2')
+@extends('layouts.app_v3')
 
 @section('title', 'Laporan Redeem V3')
 
