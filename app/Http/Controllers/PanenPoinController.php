@@ -139,6 +139,7 @@ class PanenPoinController extends Controller
             ->selectRaw($this->prizeRedeemSelectRaw('prize_redeems_v2', 'v2'))
             ->unionAll(
                 DB::table($this->prizeRedeemsTableV3())
+                    ->whereNotIn('id', DB::table('prize_redeems_v2')->select('id'))
                     ->selectRaw($this->prizeRedeemSelectRaw($this->prizeRedeemsTableV3(), 'v3'))
             );
     }
@@ -923,6 +924,8 @@ class PanenPoinController extends Controller
                     'user_id' => $user->id,
                     'prize_id' => $prize->id,
                     'point_used' => $requiredPoint,
+                    'period_start' => $this->redeemStartDate()->toDateString(),
+                    'period_end' => $this->redeemEndDate()->toDateString(),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

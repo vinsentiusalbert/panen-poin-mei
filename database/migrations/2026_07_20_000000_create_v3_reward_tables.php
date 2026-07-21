@@ -12,7 +12,6 @@ return new class extends Migration
         $this->cloneTableWithData('summary_panen_poin_v2', 'summary_panen_poin_v3');
         $this->cloneTableWithData('prizes_v2', 'prizes_v3');
         $this->cloneTableWithData('user_contact_infos_v2', 'user_contact_infos_v3');
-        $this->cloneTableWithData('prize_redeems_v2', 'prize_redeems_v3');
 
         if (!Schema::hasTable('prize_redeems_v3')) {
             Schema::create('prize_redeems_v3', function (Blueprint $table) {
