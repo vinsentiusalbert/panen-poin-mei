@@ -148,6 +148,48 @@ class PanenPoinController extends Controller
         return DB::query()->fromSub($this->prizeRedeemsUnionQuery(), $alias);
     }
 
+    private function akunPanenPoinUnionQuery()
+    {
+        return DB::table('akun_panen_poin_v2')
+            ->selectRaw("'v2' as source_version, id, nama_akun, email_client")
+            ->unionAll(
+                DB::table($this->akunPanenPoinTable())
+                    ->selectRaw("'v3' as source_version, id, nama_akun, email_client")
+            );
+    }
+
+    private function akunPanenPoinQuery(string $alias = 'u')
+    {
+        return DB::query()->fromSub($this->akunPanenPoinUnionQuery(), $alias);
+    }
+
+    private function userContactInfosUnionQuery()
+    {
+        return DB::table('user_contact_infos_v2')
+            ->selectRaw("'v2' as source_version, user_id, phone, address, remark, created_at")
+            ->unionAll(
+                DB::table($this->userContactInfosTable())
+                    ->selectRaw("'v3' as source_version, user_id, phone, address, remark, created_at")
+            );
+    }
+
+    private function latestUserContactInfosQuery(string $alias = 'uc')
+    {
+        $base = DB::query()->fromSub($this->userContactInfosUnionQuery(), 'uci');
+
+        return DB::query()->fromSub(
+            $base->select(
+                'uci.source_version',
+                'uci.user_id',
+                'uci.phone',
+                'uci.address',
+                'uci.remark',
+                DB::raw('ROW_NUMBER() OVER (PARTITION BY uci.source_version, uci.user_id ORDER BY uci.created_at DESC) as row_num')
+            ),
+            $alias
+        );
+    }
+
     private function resolvePrizeRedeemTable(string $sourceVersion): string
     {
         return $sourceVersion === 'v2' ? 'prize_redeems_v2' : $this->prizeRedeemsTableV3();
@@ -495,9 +537,16 @@ class PanenPoinController extends Controller
         $this->ensureAdminRedeemAccess();
 
         $redeems = $this->prizeRedeemsQuery('pr')
-            ->join($this->prizesTable() . ' as p', 'p.id', '=', 'pr.prize_id')
-            ->join($this->akunPanenPoinTable() . ' as u', 'u.id', '=', 'pr.user_id')
-            ->leftJoin($this->userContactInfosTable() . ' as uc', 'uc.user_id', '=', 'pr.user_id')
+            ->leftJoin($this->prizesTable() . ' as p', 'p.id', '=', 'pr.prize_id')
+            ->leftJoinSub($this->akunPanenPoinQuery('u'), 'u', function ($join) {
+                $join->on('u.id', '=', 'pr.user_id')
+                    ->on('u.source_version', '=', 'pr.source_version');
+            })
+            ->leftJoinSub($this->latestUserContactInfosQuery('uc'), 'uc', function ($join) {
+                $join->on('uc.user_id', '=', 'pr.user_id')
+                    ->on('uc.source_version', '=', 'pr.source_version')
+                    ->where('uc.row_num', '=', 1);
+            })
             ->select(
                 'pr.source_version',
                 'pr.id',
@@ -579,9 +628,16 @@ class PanenPoinController extends Controller
         $this->ensureAdminRedeemAccess();
 
         $rows = $this->prizeRedeemsQuery('pr')
-            ->join($this->prizesTable() . ' as p', 'p.id', '=', 'pr.prize_id')
-            ->join($this->akunPanenPoinTable() . ' as u', 'u.id', '=', 'pr.user_id')
-            ->leftJoin($this->userContactInfosTable() . ' as uc', 'uc.user_id', '=', 'pr.user_id')
+            ->leftJoin($this->prizesTable() . ' as p', 'p.id', '=', 'pr.prize_id')
+            ->leftJoinSub($this->akunPanenPoinQuery('u'), 'u', function ($join) {
+                $join->on('u.id', '=', 'pr.user_id')
+                    ->on('u.source_version', '=', 'pr.source_version');
+            })
+            ->leftJoinSub($this->latestUserContactInfosQuery('uc'), 'uc', function ($join) {
+                $join->on('uc.user_id', '=', 'pr.user_id')
+                    ->on('uc.source_version', '=', 'pr.source_version')
+                    ->where('uc.row_num', '=', 1);
+            })
             ->select(
                 'u.nama_akun',
                 'u.email_client',
