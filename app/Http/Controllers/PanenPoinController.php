@@ -28,12 +28,12 @@ class PanenPoinController extends Controller
 
     private function programStartDate(): Carbon
     {
-        return Carbon::create(2026, 5, 1)->startOfDay();
+        return Carbon::create(2026, 7, 1)->startOfDay();
     }
 
     private function programEndDate(): Carbon
     {
-        return Carbon::create(2026, 6, 30)->endOfDay();
+        return Carbon::create(2026, 8, 10)->endOfDay();
     }
 
     private function redeemStartDate(): Carbon
@@ -63,7 +63,22 @@ class PanenPoinController extends Controller
 
     private function summaryReferenceDate(): Carbon
     {
-        $latestCreatedAt = DB::table($this->summaryPanenPoinTable())->max('created_at');
+        if (
+            Schema::hasColumn($this->summaryPanenPoinTable(), 'period_end')
+            && DB::table($this->summaryPanenPoinTable())->whereNotNull('period_end')->exists()
+        ) {
+            $latestPeriodEnd = DB::table($this->summaryPanenPoinTable())
+                ->whereDate('period_end', '<=', $this->programEndDate()->toDateString())
+                ->max('period_end');
+
+            if ($latestPeriodEnd) {
+                return Carbon::parse($latestPeriodEnd)->endOfDay();
+            }
+        }
+
+        $latestCreatedAt = DB::table($this->summaryPanenPoinTable())
+            ->whereDate('created_at', '<=', $this->programEndDate()->toDateString())
+            ->max('created_at');
 
         if ($latestCreatedAt) {
             return Carbon::parse($latestCreatedAt);
@@ -131,6 +146,24 @@ class PanenPoinController extends Controller
         }
 
         return "{$fallback} as {$column}";
+    }
+
+    private function applySummaryReferenceFilter($query, Carbon $referenceDate, ?string $alias = null)
+    {
+        $table = $this->summaryPanenPoinTable();
+        $prefix = $alias ? "{$alias}." : '';
+
+        if (Schema::hasColumn($table, 'period_start') && Schema::hasColumn($table, 'period_end')) {
+            return $query
+                ->whereNotNull("{$prefix}period_start")
+                ->whereNotNull("{$prefix}period_end")
+                ->whereDate("{$prefix}period_start", '<=', $referenceDate->toDateString())
+                ->whereDate("{$prefix}period_end", '>=', $referenceDate->toDateString());
+        }
+
+        return $query
+            ->whereMonth("{$prefix}created_at", $referenceDate->month)
+            ->whereYear("{$prefix}created_at", $referenceDate->year);
     }
 
     private function prizeRedeemsUnionQuery()
@@ -296,7 +329,7 @@ class PanenPoinController extends Controller
             $prizes = PrizeV3::orderBy('point', 'desc')->get();
             if ($user) {
                 $date = $this->summaryReferenceDate();
-                $point = DB::table($this->summaryPanenPoinTable())
+                $pointQuery = DB::table($this->summaryPanenPoinTable())
                     ->select(
                         'nama_canvasser',
                         'email_client',
@@ -307,9 +340,10 @@ class PanenPoinController extends Controller
                         'poin_akumulasi',
                         DB::raw('((poin + poin_package) - poin_redeem) as poin'),
                         DB::raw($this->optionalColumn($this->summaryPanenPoinTable(), 'bulan'))
-                    )->where('email_client', '=', Auth::user()->email_client)
-                        ->whereMonth('created_at', $date->month)
-                        ->whereYear('created_at', $date->year)->first();
+                    )
+                    ->where('email_client', '=', Auth::user()->email_client);
+
+                $point = $this->applySummaryReferenceFilter($pointQuery, $date)->first();
             } else {
                 $point = 0;
             }
@@ -416,8 +450,7 @@ class PanenPoinController extends Controller
                 // $baseQuery->whereMonth('s.created_at', $date->month)
                 //         ->whereYear('s.created_at', $date->year);
                 
-                $baseQuery->whereMonth('s.created_at', $date->month)
-                        ->whereYear('s.created_at', $date->year);
+                $this->applySummaryReferenceFilter($baseQuery, $date, 's');
             // }
             // Helper mapper
             $mapResult = function ($query) {
@@ -697,10 +730,10 @@ class PanenPoinController extends Controller
     {
         try {
             \Log::info('=== REFRESH SUMMARY PANEN POIN STARTED ===');
-            
-            // Tentukan range tanggal bulan berjalan
-            $startDate = Carbon::now()->startOfMonth()->format('Y-m-d');
-            $endDate = Carbon::now()->endOfMonth()->format('Y-m-d');
+
+            $referenceDate = $this->activeProgramMonthDate();
+            $startDate = $referenceDate->copy()->startOfMonth()->format('Y-m-d');
+            $endDate = $referenceDate->copy()->endOfMonth()->format('Y-m-d');
             
             // Ambil semua canvasser
             $canvassers = User::where('role', 'cvsr')->get();
@@ -757,10 +790,10 @@ class PanenPoinController extends Controller
                 
                 // Query settlement akumulasi
                 $settlementsAccumulated = [];
-                $currentMonth = Carbon::now()->month;
+                $currentMonth = $referenceDate->month;
                 if ($currentMonth > 1) {
-                    $startYearDate = Carbon::now()->startOfYear()->format('Y-m-d');
-                    $endPreviousMonth = Carbon::now()->subMonth()->endOfMonth()->format('Y-m-d');
+                    $startYearDate = $referenceDate->copy()->startOfYear()->format('Y-m-d');
+                    $endPreviousMonth = $referenceDate->copy()->subMonth()->endOfMonth()->format('Y-m-d');
                     
                     $settlementsAccumulated = DB::table('report_balance_top_up')
                         ->select(DB::raw('LOWER(TRIM(email_client)) as email'), DB::raw('SUM(CAST(total_settlement_klien AS DECIMAL(15,2))) as total'))
@@ -795,8 +828,8 @@ class PanenPoinController extends Controller
                         'poin_bulan_ini' => $poinBulanIni,
                         'poin_akumulasi' => $poinAkumulasi,
                         'poin' => $totalPoin,
-                        'bulan' => Carbon::now()->locale('id')->translatedFormat('F Y'),
-                        'created_at' => now(),
+                        'bulan' => $referenceDate->copy()->locale('id')->translatedFormat('F Y'),
+                        'created_at' => $referenceDate->copy()->endOfMonth(),
                         'updated_at' => now()
                     ]);
                     
@@ -866,7 +899,7 @@ class PanenPoinController extends Controller
                     ->lockForUpdate()
                     ->first();
 
-                $date = now();
+                $date = $this->summaryReferenceDate();
 
                 $redeemCountThisMonth = $this->prizeRedeemsQuery()
                         ->where('user_id', $user->id)
@@ -892,8 +925,8 @@ class PanenPoinController extends Controller
                 $alreadyRedeemThisPrize = $this->prizeRedeemsQuery()
                     ->where('user_id', $user->id)
                     ->where('prize_id', $request->prize_id)
-                    ->whereMonth('created_at', now()->month)
-                    ->whereYear('created_at', now()->year)
+                    ->whereMonth('created_at', $date->month)
+                    ->whereYear('created_at', $date->year)
                     ->exists();
 
                 if ($alreadyRedeemThisPrize) {
@@ -903,10 +936,9 @@ class PanenPoinController extends Controller
                 // Lock poin user
                 $userPointRecord = DB::table($this->summaryPanenPoinTable())
                     ->where('email_client', $user->email_client)
-                    ->whereMonth('created_at', $date->month)
-                    ->whereYear('created_at', $date->year)
-                    ->lockForUpdate()
-                    ->first();
+                    ->lockForUpdate();
+
+                $userPointRecord = $this->applySummaryReferenceFilter($userPointRecord, $date)->first();
 
                 $userPoint = (int) ($userPointRecord->poin ?? 0);
                 $userPointPackage = (int) ($userPointRecord->poin_package ?? 0);
