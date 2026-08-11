@@ -43,7 +43,7 @@ class PanenPoinController extends Controller
 
     private function redeemEndDate(): Carbon
     {
-        return Carbon::create(2026, 8, 11)->endOfDay();
+        return Carbon::create(2026, 8, 10)->endOfDay();
     }
 
     private function activeProgramMonthDate(): Carbon
@@ -882,7 +882,7 @@ class PanenPoinController extends Controller
             return $respond(false, 'Redeem hanya bisa dilakukan mulai 1 Juli 2026');
         }
         if ($today->gt($redeemEndDate)) {
-            return $respond(false, 'Periode redeem berakhir pada 11 Agustus 2026');
+            return $respond(false, 'Periode redeem berakhir pada 10 Agustus 2026');
         }
         $latestContact = DB::table($this->userContactInfosTable())
             ->where('user_id', $user->id)

@@ -341,10 +341,10 @@
     <div class="prize-section-head mb-4">
         <div>
             <h4 class="mb-1">Hadiah yang Bisa Diredeem</h4>
-            <p class="prize-section-copy mb-0">Pilih hadiah favoritmu. Redeem aktif dari 1 Juli 2026 sampai 11 Agustus 2026 dengan maksimal 2 hadiah per user.</p>
+            <p class="prize-section-copy mb-0">Pilih hadiah favoritmu. Redeem aktif dari 1 Juli 2026 sampai 10 Agustus 2026 dengan maksimal 2 hadiah per user.</p>
         </div>
         <div class="prize-section-pill">
-            1 Juli - 11 Agustus 2026
+            1 Juli - 10 Agustus 2026
         </div>
     </div>
 
