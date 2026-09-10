@@ -13,9 +13,9 @@ class PrizeSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('prizes_v3')->truncate();
+        DB::table('prizes_v4')->truncate();
 
-        DB::table('prizes_v3')->insert([
+        DB::table('prizes_v4')->insert([
             [
                 'img' => 'hadiah/Motor Vario 125 CBS.png',
                 'name' => 'Motor Vario 125 CBS',

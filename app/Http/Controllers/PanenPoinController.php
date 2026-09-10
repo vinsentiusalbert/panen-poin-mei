@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\UserPanenPoin;
 use App\Models\User;
-use App\Models\PrizeV3;
-use App\Models\PrizeRedeemV3;
-use App\Models\UserContactInfoV3;
+use App\Models\PrizeV4;
+use App\Models\PrizeRedeemV4;
+use App\Models\UserContactInfoV4;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -28,22 +28,22 @@ class PanenPoinController extends Controller
 
     private function programStartDate(): Carbon
     {
-        return Carbon::create(2026, 7, 1)->startOfDay();
+        return Carbon::create(2026, 9, 1)->startOfDay();
     }
 
     private function programEndDate(): Carbon
     {
-        return Carbon::create(2026, 8, 10)->endOfDay();
+        return Carbon::create(2026, 10, 9)->endOfDay();
     }
 
     private function redeemStartDate(): Carbon
     {
-        return Carbon::create(2026, 7, 1)->startOfDay();
+        return Carbon::create(2026, 9, 1)->startOfDay();
     }
 
     private function redeemEndDate(): Carbon
     {
-        return Carbon::create(2026, 8, 10)->endOfDay();
+        return Carbon::create(2026, 10, 9)->endOfDay();
     }
 
     private function activeProgramMonthDate(): Carbon
@@ -89,27 +89,27 @@ class PanenPoinController extends Controller
 
     private function akunPanenPoinTable(): string
     {
-        return 'akun_panen_poin_v3';
+        return 'akun_panen_poin_v4';
     }
 
     private function summaryPanenPoinTable(): string
     {
-        return 'summary_panen_poin_v3';
+        return 'summary_panen_poin_v4';
     }
 
     private function prizesTable(): string
     {
-        return (new PrizeV3())->getTable();
+        return (new PrizeV4())->getTable();
     }
 
-    private function prizeRedeemsTableV3(): string
+    private function prizeRedeemsTableV4(): string
     {
-        return (new PrizeRedeemV3())->getTable();
+        return (new PrizeRedeemV4())->getTable();
     }
 
     private function userContactInfosTable(): string
     {
-        return (new UserContactInfoV3())->getTable();
+        return (new UserContactInfoV4())->getTable();
     }
 
     private function relatedRedeemUserIds($user): array
@@ -122,7 +122,7 @@ class PanenPoinController extends Controller
         $userIds = [$user->id];
 
         if ($email !== '') {
-            foreach (['akun_panen_poin_v2', $this->akunPanenPoinTable()] as $table) {
+            foreach ([$this->akunPanenPoinTable()] as $table) {
                 if (!Schema::hasTable($table) || !Schema::hasColumn($table, 'email_client')) {
                     continue;
                 }
@@ -168,13 +168,8 @@ class PanenPoinController extends Controller
 
     private function prizeRedeemsUnionQuery()
     {
-        return DB::table('prize_redeems_v2')
-            ->selectRaw($this->prizeRedeemSelectRaw('prize_redeems_v2', 'v2'))
-            ->unionAll(
-                DB::table($this->prizeRedeemsTableV3())
-                    ->whereNotIn('id', DB::table('prize_redeems_v2')->select('id'))
-                    ->selectRaw($this->prizeRedeemSelectRaw($this->prizeRedeemsTableV3(), 'v3'))
-            );
+        return DB::table($this->prizeRedeemsTableV4())
+            ->selectRaw($this->prizeRedeemSelectRaw($this->prizeRedeemsTableV4(), 'v4'));
     }
 
     private function prizeRedeemsQuery(string $alias = 'pr')
@@ -184,12 +179,8 @@ class PanenPoinController extends Controller
 
     private function akunPanenPoinUnionQuery()
     {
-        return DB::table('akun_panen_poin_v2')
-            ->selectRaw("'v2' as source_version, id, nama_akun, email_client")
-            ->unionAll(
-                DB::table($this->akunPanenPoinTable())
-                    ->selectRaw("'v3' as source_version, id, nama_akun, email_client")
-            );
+        return DB::table($this->akunPanenPoinTable())
+            ->selectRaw("'v4' as source_version, id, nama_akun, email_client");
     }
 
     private function akunPanenPoinQuery(string $alias = 'u')
@@ -199,12 +190,8 @@ class PanenPoinController extends Controller
 
     private function userContactInfosUnionQuery()
     {
-        return DB::table('user_contact_infos_v2')
-            ->selectRaw("'v2' as source_version, user_id, phone, address, remark, created_at")
-            ->unionAll(
-                DB::table($this->userContactInfosTable())
-                    ->selectRaw("'v3' as source_version, user_id, phone, address, remark, created_at")
-            );
+        return DB::table($this->userContactInfosTable())
+            ->selectRaw("'v4' as source_version, user_id, phone, address, remark, created_at");
     }
 
     private function latestUserContactInfosQuery(string $alias = 'uc')
@@ -226,7 +213,7 @@ class PanenPoinController extends Controller
 
     private function resolvePrizeRedeemTable(string $sourceVersion): string
     {
-        return $sourceVersion === 'v2' ? 'prize_redeems_v2' : $this->prizeRedeemsTableV3();
+        return $this->prizeRedeemsTableV4();
     }
 
     private function prizeRedeemSelectRaw(string $table, string $sourceVersion): string
@@ -326,7 +313,7 @@ class PanenPoinController extends Controller
             $relatedRedeemUserIds = $this->relatedRedeemUserIds($user);
             \Log::info('Starting calculatePanenPoinData...');
             $data = $this->calculatePanenPoinData($request->tanggal);
-            $prizes = PrizeV3::orderBy('point', 'desc')->get();
+            $prizes = PrizeV4::orderBy('point', 'desc')->get();
             if ($user) {
                 $date = $this->summaryReferenceDate();
                 $pointQuery = DB::table($this->summaryPanenPoinTable())
@@ -338,7 +325,7 @@ class PanenPoinController extends Controller
                         DB::raw('FORMAT(total_settlement, 0, "id_ID") as total_settlement'),
                         'poin_bulan_ini',
                         'poin_akumulasi',
-                        DB::raw('((poin + poin_package) - poin_redeem) as poin'),
+                        DB::raw('((COALESCE(poin, 0) + COALESCE(poin_package, 0)) - COALESCE(poin_redeem, 0)) as poin'),
                         DB::raw($this->optionalColumn($this->summaryPanenPoinTable(), 'bulan'))
                     )
                     ->where('email_client', '=', Auth::user()->email_client);
@@ -351,15 +338,13 @@ class PanenPoinController extends Controller
             $redeemCounts = $this->prizeRedeemsQuery()
                 ->select('prize_id', DB::raw('COUNT(*) as total'))
                 ->when(!empty($relatedRedeemUserIds), fn ($query) => $query->whereIn('user_id', $relatedRedeemUserIds), fn ($query) => $query->whereRaw('1 = 0'))
-                ->whereMonth('created_at', $date->month)
-                ->whereYear('created_at', $date->year)
+                ->whereBetween('created_at', [$this->redeemStartDate(), $this->redeemEndDate()])
                 ->groupBy('prize_id')
                 ->pluck('total', 'prize_id')
                 ->toArray();
-            $totalRedeemThisMonth = $this->prizeRedeemsQuery()
+            $totalRedeemThisPeriod = $this->prizeRedeemsQuery()
                 ->when(!empty($relatedRedeemUserIds), fn ($query) => $query->whereIn('user_id', $relatedRedeemUserIds), fn ($query) => $query->whereRaw('1 = 0'))
-                ->whereMonth('created_at', $date->month)
-                ->whereYear('created_at', $date->year)
+                ->whereBetween('created_at', [$this->redeemStartDate(), $this->redeemEndDate()])
                 ->count();
             $userContactInfos = $user
                 ? DB::table($this->userContactInfosTable())
@@ -367,7 +352,7 @@ class PanenPoinController extends Controller
                     ->orderByDesc('created_at')
                     ->get()
                 : collect();
-            $redeemMonthlyLimit = 2;
+            $redeemPeriodLimit = 2;
             $today = Carbon::today();
             $redeemStartDate = $this->redeemStartDate();
             $redeemEndDate = $this->redeemEndDate();
@@ -393,13 +378,13 @@ class PanenPoinController extends Controller
                     ->orderByDesc('pr.created_at')
                     ->get()
                 : collect();
-            return view('reward.index_v3', compact(
+            return view('reward.index_v4', compact(
                 'data',
                 'point',
                 'prizes',
                 'redeemCounts',
-                'totalRedeemThisMonth',
-                'redeemMonthlyLimit',
+                'totalRedeemThisPeriod',
+                'redeemPeriodLimit',
                 'isRedeemPeriod',
                 'isRedeemEnded',
                 'redeemStartDate',
@@ -598,7 +583,7 @@ class PanenPoinController extends Controller
             ->orderByDesc('pr.created_at')
             ->get();
 
-        return view('reward.admin_redeems_v3', compact('redeems'));
+        return view('reward.admin_redeems_v4', compact('redeems'));
     }
 
     public function markRedeemShipped(Request $request, $id)
@@ -606,7 +591,7 @@ class PanenPoinController extends Controller
         $this->ensureAdminRedeemAccess();
 
         $request->validate([
-            'source_version' => 'required|in:v2,v3',
+            'source_version' => 'required|in:v4',
             'shipping_proof' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
@@ -632,7 +617,7 @@ class PanenPoinController extends Controller
 
         $request->validate([
             'redeem_id' => 'required|integer',
-            'source_version' => 'required|in:v2,v3',
+            'source_version' => 'required|in:v4',
             'proof' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
@@ -733,7 +718,7 @@ class PanenPoinController extends Controller
 
             $referenceDate = $this->activeProgramMonthDate();
             $startDate = $referenceDate->copy()->startOfMonth()->format('Y-m-d');
-            $endDate = $referenceDate->copy()->endOfMonth()->format('Y-m-d');
+            $endDate = $referenceDate->copy()->endOfMonth()->min($this->programEndDate())->format('Y-m-d');
             
             // Ambil semua canvasser
             $canvassers = User::where('role', 'cvsr')->get();
@@ -819,7 +804,7 @@ class PanenPoinController extends Controller
                     $poinAkumulasi = floor($settlementPrevious / 250000);
                     $totalPoin = $poinBulanIni + $poinAkumulasi;
                     
-                    DB::table($this->summaryPanenPoinTable())->insert([
+                    $summaryRow = [
                         'user_id' => $canvasser->id,
                         'nama_canvasser' => $canvasser->name,
                         'email_client' => $email,
@@ -829,9 +814,16 @@ class PanenPoinController extends Controller
                         'poin_akumulasi' => $poinAkumulasi,
                         'poin' => $totalPoin,
                         'bulan' => $referenceDate->copy()->locale('id')->translatedFormat('F Y'),
-                        'created_at' => $referenceDate->copy()->endOfMonth(),
+                        'created_at' => Carbon::parse($endDate)->endOfDay(),
                         'updated_at' => now()
-                    ]);
+                    ];
+                    if (Schema::hasColumn($this->summaryPanenPoinTable(), 'period_start')) {
+                        $summaryRow['period_start'] = $startDate;
+                    }
+                    if (Schema::hasColumn($this->summaryPanenPoinTable(), 'period_end')) {
+                        $summaryRow['period_end'] = $endDate;
+                    }
+                    DB::table($this->summaryPanenPoinTable())->insert($summaryRow);
                     
                     $totalProcessed++;
                 }
@@ -866,7 +858,7 @@ class PanenPoinController extends Controller
         };
 
         $request->validate([
-            'prize_id' => 'required|integer|exists:prizes_v3,id',
+            'prize_id' => 'required|integer|exists:prizes_v4,id',
         ]);
 
         $user = auth()->user();
@@ -879,10 +871,10 @@ class PanenPoinController extends Controller
         $redeemEndDate = $this->redeemEndDate();
 
         if ($today->lt($redeemStartDate)) {
-            return $respond(false, 'Redeem hanya bisa dilakukan mulai 1 Juli 2026');
+            return $respond(false, 'Redeem hanya bisa dilakukan mulai 1 September 2026');
         }
         if ($today->gt($redeemEndDate)) {
-            return $respond(false, 'Periode redeem berakhir pada 10 Agustus 2026');
+            return $respond(false, 'Periode redeem berakhir pada 9 Oktober 2026');
         }
         $latestContact = DB::table($this->userContactInfosTable())
             ->where('user_id', $user->id)
@@ -892,28 +884,27 @@ class PanenPoinController extends Controller
             return $respond(false, 'Lengkapi nomor telp dan alamat terlebih dahulu', 400);
         }
         try {
-            DB::transaction(function () use ($request, $user, $latestContact) {
+            DB::transaction(function () use ($request, $user) {
                 // Serialize redeem per user to prevent double-submit race.
-                DB::table('users')
+                DB::table($this->akunPanenPoinTable())
                     ->where('id', $user->id)
                     ->lockForUpdate()
                     ->first();
 
                 $date = $this->summaryReferenceDate();
 
-                $redeemCountThisMonth = $this->prizeRedeemsQuery()
-                        ->where('user_id', $user->id)
-                        ->whereMonth('created_at', $date->month)
-                        ->whereYear('created_at', $date->year)
-                        ->count();
+                $redeemCountThisPeriod = $this->prizeRedeemsQuery()
+                    ->where('user_id', $user->id)
+                    ->whereBetween('created_at', [$this->redeemStartDate(), $this->redeemEndDate()])
+                    ->count();
 
-                    $redeemMonthlyLimit = 2;
+                $redeemPeriodLimit = 2;
 
-                    if ($redeemCountThisMonth >= $redeemMonthlyLimit) {
-                        throw new \Exception("Anda sudah mencapai batas maksimal {$redeemMonthlyLimit} redeem bulan ini");
-                    }
+                if ($redeemCountThisPeriod >= $redeemPeriodLimit) {
+                    throw new \Exception("Anda sudah mencapai batas maksimal {$redeemPeriodLimit} redeem pada periode ini");
+                }
                 // Lock hadiah
-                $prize = PrizeV3::where('id', $request->prize_id)
+                $prize = PrizeV4::where('id', $request->prize_id)
                     ->lockForUpdate()
                     ->firstOrFail();
 
@@ -925,8 +916,7 @@ class PanenPoinController extends Controller
                 $alreadyRedeemThisPrize = $this->prizeRedeemsQuery()
                     ->where('user_id', $user->id)
                     ->where('prize_id', $request->prize_id)
-                    ->whereMonth('created_at', $date->month)
-                    ->whereYear('created_at', $date->year)
+                    ->whereBetween('created_at', [$this->redeemStartDate(), $this->redeemEndDate()])
                     ->exists();
 
                 if ($alreadyRedeemThisPrize) {
@@ -944,7 +934,13 @@ class PanenPoinController extends Controller
                 $userPointPackage = (int) ($userPointRecord->poin_package ?? 0);
                 $requiredPoint = (int) $prize->point;
 
-                if (($userPoint + $userPointPackage) < $requiredPoint) {
+                // Read actual spending inside the account lock, including September and October.
+                $spentPoints = (int) $this->prizeRedeemsQuery()
+                    ->where('user_id', $user->id)
+                    ->whereBetween('created_at', [$this->redeemStartDate(), $this->redeemEndDate()])
+                    ->sum('point_used');
+
+                if (($userPoint + $userPointPackage - $spentPoints) < $requiredPoint) {
                     throw new \Exception('Poin tidak cukup untuk menukar hadiah ini');
                 }
 
@@ -952,7 +948,7 @@ class PanenPoinController extends Controller
                 $prize->decrement('stock');
 
                 // Simpan redeem
-                DB::table($this->prizeRedeemsTableV3())->insert([
+                DB::table($this->prizeRedeemsTableV4())->insert([
                     'user_id' => $user->id,
                     'prize_id' => $prize->id,
                     'point_used' => $requiredPoint,
@@ -963,7 +959,10 @@ class PanenPoinController extends Controller
                 ]);
 
                 // Update summary
-                $this->updateSummaryAfterRedeem($user->id);
+                $summaryUpdate = $this->updateSummaryAfterRedeem($user->id);
+                if (!$summaryUpdate['success']) {
+                    throw new \RuntimeException('Gagal memperbarui poin setelah redeem.');
+                }
             });
 
             return $respond(true, 'Hadiah berhasil ditukar');
@@ -1010,14 +1009,12 @@ class PanenPoinController extends Controller
         try {
             \Log::info("=== UPDATE SUMMARY AFTER REDEEM FOR USER: {$userId} ===");
             
-            $currentMonth = Carbon::now()->month;
-            $currentYear = Carbon::now()->year;
+            $referenceDate = $this->summaryReferenceDate();
             
-            // Hitung total poin yang sudah di-redeem user ini bulan ini
+            // Hitung pemakaian poin selama seluruh periode redeem.
             $totalPoinRedeem = $this->prizeRedeemsQuery()
                 ->where('user_id', $userId)
-                ->whereMonth('created_at', $currentMonth)
-                ->whereYear('created_at', $currentYear)
+                ->whereBetween('created_at', [$this->redeemStartDate(), $this->redeemEndDate()])
                 ->sum('point_used') ?? 0;
 
             $akun = DB::table($this->akunPanenPoinTable())
@@ -1025,11 +1022,15 @@ class PanenPoinController extends Controller
                 
             \Log::info("Total poin redeem for user {$userId}: {$totalPoinRedeem}");
             
-            // Update semua record summary user ini di bulan ini
-            $latestSummary = DB::table($this->summaryPanenPoinTable())
-                ->where('email_client', $akun->email_client)
-                ->latest('created_at')
-                ->first();
+            // Update summary yang sama dengan sumber saldo pengguna.
+            $latestSummaryQuery = DB::table($this->summaryPanenPoinTable())
+                ->where('email_client', $akun->email_client);
+            $latestSummary = $this->applySummaryReferenceFilter($latestSummaryQuery, $referenceDate)
+                ->latest('created_at')->first();
+
+            if (!$latestSummary) {
+                throw new \RuntimeException('Data poin untuk periode ini tidak ditemukan.');
+            }
 
             $updatedCount = 0;
 
