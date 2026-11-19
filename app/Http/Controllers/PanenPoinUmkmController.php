@@ -39,23 +39,19 @@ class PanenPoinUmkmController extends Controller
         );
     }
 
-    private function dummyLeaderboard(string $key): array
-    {
-        $rows = $key === 'p1'
-            ? [
-                ['nama_akun' => 'Warung Berkah Jaya',  'email' => 'berkahjaya@example.com',   'canvasser' => 'Andi Pratama', 'poin' => 420],
-                ['nama_akun' => 'Toko Sinar Mulia',    'email' => 'sinarmulia@example.com',   'canvasser' => 'Siti Rahma',   'poin' => 385],
-                ['nama_akun' => 'Kedai Kopi Senja',    'email' => 'kopisenja@example.com',    'canvasser' => 'Budi Santoso', 'poin' => 340],
-                ['nama_akun' => 'Batik Nusantara',     'email' => 'batiknusa@example.com',    'canvasser' => 'Dewi Lestari', 'poin' => 295],
-                ['nama_akun' => 'Dapur Bu Ratna',      'email' => 'dapurratna@example.com',   'canvasser' => 'Andi Pratama', 'poin' => 260],
-                ['nama_akun' => 'Laundry Bersih Kilat','email' => 'laundrykilat@example.com', 'canvasser' => 'Rizky Maulana','poin' => 215],
-                ['nama_akun' => 'Bengkel Maju Motor',  'email' => 'majumotor@example.com',    'canvasser' => 'Siti Rahma',   'poin' => 180],
-                ['nama_akun' => 'Snack Renyah Id',     'email' => 'snackrenyah@example.com',  'canvasser' => 'Budi Santoso', 'poin' => 120],
-            ]
-            : [];
-
-        return $rows;
-    }
+        private function leaderboard(string $key): array
+        {
+            return \Illuminate\Support\Facades\DB::table('summary_panen_poin_umkm as s')
+                ->join('akun_panen_poin_v4 as u', 'u.email_client', '=', 's.email_client')
+                ->where('s.period_key', $key)
+                ->selectRaw('u.nama_akun, s.email_client as email, s.nama_canvasser as canvasser,
+                            (s.poin + COALESCE(s.poin_package, 0)) as poin')
+                ->orderByDesc('poin')
+                ->limit(10)
+                ->get()
+                ->map(fn ($r) => (array) $r)
+                ->all();
+        }
 
         private function prizes(string $key): array
         {
@@ -87,7 +83,7 @@ class PanenPoinUmkmController extends Controller
                 $p['days_info'] = ($this->daysBetween($today, $p['end']) + 1) . ' hari tersisa';
             }
 
-            $p['leaderboard'] = $this->dummyLeaderboard($p['key']);
+            $p['leaderboard'] = $this->leaderboard($p['key']);
             $p['prizes'] = $this->prizes($p['key']);
 
             return $p;
