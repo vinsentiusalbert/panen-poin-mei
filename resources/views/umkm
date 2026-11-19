@@ -1,0 +1,193 @@
+@extends('layouts.app_umkm')
+
+@section('title', 'Panen Poin UMKM Area 3')
+
+@section('content')
+@php
+    $user = auth()->user();
+    $fmt = fn ($d) => $d->locale('id')->translatedFormat('d M Y');
+    $mask = fn ($s) => mb_substr($s, 0, 2) . str_repeat('*', max(mb_strlen($s) - 2, 0));
+    $maskEmail = function ($email) use ($mask) {
+        [$n, $d] = explode('@', $email);
+        return $mask($n) . '@' . $mask($d);
+    };
+    $prizeImg = fn ($file) => asset('hadiah/' . rawurlencode($file));
+    $progress = $totalDays > 0 ? round(($elapsedDays / $totalDays) * 100) : 0;
+@endphp
+
+{{-- ================= HERO ================= --}}
+<header class="um-hero">
+    <div class="container">
+        <span class="um-chip um-chip--gold">UMKM · Area 3</span>
+        <h1 class="um-hero__title">Panen Poin,<br>Panen Hadiah.</h1>
+        <p class="um-hero__copy">
+            Kumpulkan poin dari setiap transaksi iklanmu dan tukarkan dengan hadiah menarik!
+            Program berlangsung <strong>{{ $fmt($programStart) }} – {{ $fmt($programEnd) }}</strong>
+            dalam <strong>2 periode</strong>.
+        </p>
+
+        <div class="um-hero__progress">
+            <div class="d-flex justify-content-between small mb-2">
+                <span>Progres program</span>
+                <span>Hari {{ $elapsedDays }} dari {{ $totalDays }}</span>
+            </div>
+            <div class="um-bar"><div class="um-bar__fill" style="width: {{ $progress }}%"></div></div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-4">
+            <a href="#leaderboard" class="btn um-btn-gold">Lihat Peringkat</a>
+            <a href="#hadiah" class="btn um-btn-ghost">Lihat Hadiah</a>
+        </div>
+    </div>
+</header>
+
+<main class="container um-main">
+
+    {{-- ================= PERIODE ================= --}}
+    <section id="periode" class="um-section">
+        <div class="um-section__head">
+            <h2>Periode Program</h2>
+            <p>Poin dihitung terpisah di setiap periode.</p>
+        </div>
+
+        <div class="row g-4">
+            @foreach($periods as $p)
+            <div class="col-md-6">
+                <div class="um-period um-period--{{ $p['status'] }}">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h3>{{ $p['label'] }}</h3>
+                        <span class="um-status um-status--{{ $p['status'] }}">{{ $p['status_label'] }}</span>
+                    </div>
+                    <div class="um-period__date">{{ $fmt($p['start']) }} – {{ $fmt($p['end']) }}</div>
+                    <div class="um-period__info">{{ $p['days_info'] }}</div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </section>
+
+    {{-- ================= POIN SAYA ================= --}}
+    <section class="um-section">
+        <div class="um-card um-mypoint">
+            <div>
+                <div class="um-mypoint__label">Poin Saya</div>
+                @if($user)
+                    <div class="um-mypoint__value">0 <small>poin</small></div>
+                    <div class="um-mypoint__note">Perhitungan poin akan tampil di sini.</div>
+                @else
+                    <div class="um-mypoint__value">— <small>poin</small></div>
+                    <div class="um-mypoint__note">Login untuk melihat poin kamu.</div>
+                @endif
+            </div>
+            <div class="um-mypoint__periods">
+                @foreach($periods as $p)
+                    <div class="um-mypoint__row">
+                        <span>{{ $p['label'] }}</span>
+                        <strong>{{ $user ? '0' : '—' }} poin</strong>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    {{-- ================= SWITCH PERIODE ================= --}}
+    <div class="um-switch" role="tablist">
+        @foreach($periods as $p)
+            <button class="um-switch__btn {{ $p['key'] === $activeKey ? 'active' : '' }}"
+                    data-bs-toggle="pill" data-bs-target="#pane-{{ $p['key'] }}"
+                    type="button" role="tab">
+                {{ $p['label'] }}
+                <small>{{ $fmt($p['start']) }} – {{ $fmt($p['end']) }}</small>
+            </button>
+        @endforeach
+    </div>
+
+    <div class="tab-content">
+        @foreach($periods as $p)
+        <div class="tab-pane fade {{ $p['key'] === $activeKey ? 'show active' : '' }}" id="pane-{{ $p['key'] }}" role="tabpanel">
+
+            {{-- ===== LEADERBOARD ===== --}}
+            <section class="um-section" @if($loop->first) id="leaderboard" @endif>
+                <div class="um-section__head">
+                    <h2>Peringkat {{ $p['label'] }}</h2>
+                </div>
+
+                <div class="um-card um-table">
+                    <div class="um-table__row um-table__row--head">
+                        <span>No</span><span>Nama Akun</span><span class="d-none d-md-block">Canvasser</span><span class="text-end">Poin</span>
+                    </div>
+
+                    @forelse($p['leaderboard'] as $i => $row)
+                        <div class="um-table__row {{ $i < 3 ? 'um-table__row--top um-table__row--top-' . ($i + 1) : '' }}">
+                            <span class="um-rank">{{ $i + 1 }}</span>
+                            <span>
+                                <strong>{{ $mask($row['nama_akun']) }}</strong>
+                                <small class="d-block text-muted">{{ $maskEmail($row['email']) }}</small>
+                            </span>
+                            <span class="d-none d-md-block">{{ $row['canvasser'] }}</span>
+                            <span class="text-end um-pts">{{ number_format($row['poin']) }} <small>PTS</small></span>
+                        </div>
+                    @empty
+                        <div class="um-empty">
+                            <div class="um-empty__icon">🌱</div>
+                            <strong>Belum ada data untuk {{ $p['label'] }}</strong>
+                            <span>Peringkat muncul setelah periode dimulai.</span>
+                        </div>
+                    @endforelse
+                </div>
+            </section>
+
+            {{-- ===== HADIAH ===== --}}
+            <section class="um-section" @if($loop->first) id="hadiah" @endif>
+                <div class="um-section__head">
+                    <h2>Hadiah {{ $p['label'] }}</h2>
+                    <p>Redeem aktif selama {{ $p['label'] }} berlangsung.</p>
+                </div>
+
+                <div class="row g-4">
+                    @foreach($p['prizes'] as $prize)
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="um-prize">
+                            <div class="um-prize__top">
+                                <span class="um-chip um-chip--soft">Stok {{ $prize['stock'] }}</span>
+                                <span class="um-chip um-chip--gold">{{ $prize['point'] }} Poin</span>
+                            </div>
+                            <div class="um-prize__img">
+                                <img src="{{ $prizeImg($prize['img']) }}" alt="{{ $prize['name'] }}" loading="lazy">
+                            </div>
+                            <div class="um-prize__name">{{ $prize['name'] }}</div>
+                            <button type="button" class="btn um-btn-green w-100" disabled>
+                                {{ $p['status'] === 'upcoming' ? 'Redeem Segera Dibuka' : ($p['status'] === 'ended' ? 'Periode Selesai' : 'Redeem Segera Hadir') }}
+                            </button>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </section>
+        </div>
+        @endforeach
+    </div>
+
+    {{-- ================= CARA MAIN ================= --}}
+    <section class="um-section">
+        <div class="um-section__head">
+            <h2>Cara Mendapatkan Poin</h2>
+        </div>
+        <div class="row g-4">
+            @foreach([
+                ['1', 'Aktifkan Iklan', 'Pasang iklan UMKM-mu melalui MyAds selama periode program.'],
+                ['2', 'Kumpulkan Poin', 'Poin bertambah dari transaksi sesuai ketentuan program. (Skema poin menyusul)'],
+                ['3', 'Tukar Hadiah', 'Tukarkan poin dengan hadiah di setiap periode.'],
+            ] as [$n, $t, $d])
+            <div class="col-md-4">
+                <div class="um-card um-step">
+                    <div class="um-step__no">{{ $n }}</div>
+                    <h4>{{ $t }}</h4>
+                    <p>{{ $d }}</p>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </section>
+</main>
+@endsection
