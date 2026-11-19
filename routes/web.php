@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 // use App\Http\Controllers\RewardController;
 use App\Http\Controllers\PanenPoinController;
 use App\Http\Controllers\BackController;
+use App\Http\Controllers\PanenPoinUmkmController;
 
 
 
@@ -18,3 +19,6 @@ Route::get('/admin/redeems', [PanenPoinController::class, 'adminRedeems'])->name
 Route::get('/admin/redeems/export', [PanenPoinController::class, 'exportRedeemsExcel'])->name('admin.redeems.export');
 Route::post('/admin/redeems/{id}/ship', [PanenPoinController::class, 'markRedeemShipped'])->name('admin.redeems.ship');
 Route::post('/redeem/proof', [PanenPoinController::class, 'uploadRedeemProof'])->name('redeem.proof');
+
+// Panen Poin UMKM - Area 3 (13 Nov - 31 Des 2026) - tahap UI
+Route::get('/umkm-area3', [PanenPoinUmkmController::class, 'index'])->name('umkm.area3');
