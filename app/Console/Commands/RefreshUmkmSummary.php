@@ -109,11 +109,12 @@ class RefreshUmkmSummary extends Command
                         'poin_bulan_ini'   => $poin,
                         'poin_akumulasi'   => 0,
                         'poin'             => $poin,
-                        'bulan'            => $startAt->copy()->locale('id')->translatedFormat('F Y'),
+                        'periode_label'    => 'Periode ' . substr($key, 1),
                         'period_start'     => $startAt->toDateString(),
                         'period_end'       => $endAt->toDateString(),
                         'created_at'       => now(),
                         'updated_at'       => now(),
+                        'source'           => 'umkm',
                     ]);
 
                     $total++;
