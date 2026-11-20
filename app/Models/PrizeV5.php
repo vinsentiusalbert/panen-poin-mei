@@ -4,14 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class PrizeV4 extends Model
+class PrizeV5 extends Model
 {
     protected $table = 'prizes_v5';
-
-    protected $fillable = [
-        'img',
-        'name',
-        'point',
-        'stock',
-    ];
+    protected $guarded = [];
 }

@@ -4,14 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class UserContactInfoV4 extends Model
+class UserContactInfoV5 extends Model
 {
     protected $table = 'user_contact_infos_v5';
-
-    protected $fillable = [
-        'user_id',
-        'phone',
-        'address',
-        'remark',
-    ];
+    protected $guarded = [];
 }

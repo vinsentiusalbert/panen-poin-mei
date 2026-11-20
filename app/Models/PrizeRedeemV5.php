@@ -4,16 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class PrizeRedeemV4 extends Model
+class PrizeRedeemV5 extends Model
 {
     protected $table = 'prize_redeems_v5';
+    protected $guarded = [];
 
-    protected $fillable = [
-        'user_id',
-        'prize_id',
-        'point_used',
-        'shipped_at',
-        'shipping_proof_path',
-        'proof_path',
-    ];
+    public function prize()
+    {
+        return $this->belongsTo(PrizeV5::class, 'prize_id');
+    }
 }
