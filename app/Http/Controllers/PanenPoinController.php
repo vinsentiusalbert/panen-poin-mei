@@ -33,7 +33,7 @@ class PanenPoinController extends Controller
 
     private function programEndDate(): Carbon
     {
-        return Carbon::create(2026, 12, 6)->endOfDay();
+        return Carbon::create(2026, 12, 31)->endOfDay();
     }
 
     private function redeemStartDate(): Carbon
@@ -43,7 +43,36 @@ class PanenPoinController extends Controller
 
     private function redeemEndDate(): Carbon
     {
-        return Carbon::create(2026, 12, 6)->endOfDay();
+        return Carbon::create(2026, 12, 31)->endOfDay();
+    }
+
+    private function periodsMeta(): array
+    {
+        return [
+            'p1' => [
+                'key'   => 'p1',
+                'label' => 'Periode 1',
+                'range' => '13 November - 6 Desember 2026',
+                'start' => Carbon::create(2026, 11, 13)->startOfDay(),
+                'end'   => Carbon::create(2026, 12, 6)->endOfDay(),
+            ],
+            'p2' => [
+                'key'   => 'p2',
+                'label' => 'Periode 2',
+                'range' => '7 Desember - 31 Desember 2026',
+                'start' => Carbon::create(2026, 12, 7)->startOfDay(),
+                'end'   => Carbon::create(2026, 12, 31)->endOfDay(),
+            ],
+        ];
+    }
+
+    private function resolvePeriodKey(?string $period = null): string
+    {
+        if (in_array($period, ['p1', 'p2'], true)) {
+            return $period;
+        }
+
+        return Carbon::today()->gte(Carbon::create(2026, 12, 7)) ? 'p2' : 'p1';
     }
 
     private function activeProgramMonthDate(): Carbon
@@ -148,17 +177,21 @@ class PanenPoinController extends Controller
         return "{$fallback} as {$column}";
     }
 
-    private function applySummaryReferenceFilter($query, Carbon $referenceDate, ?string $alias = null)
+private function applySummaryReferenceFilter($query, Carbon $referenceDate, ?string $alias = null, ?string $periodKey = null)
     {
         $table = $this->summaryPanenPoinTable();
         $prefix = $alias ? "{$alias}." : '';
+        $resolvedKey = $this->resolvePeriodKey($periodKey);
 
+        if (Schema::hasColumn($table, 'period_key')) {
+            return $query->where("{$prefix}period_key", $resolvedKey);
+        }
+
+        $period = $this->periodsMeta()[$resolvedKey];
         if (Schema::hasColumn($table, 'period_start') && Schema::hasColumn($table, 'period_end')) {
             return $query
-                ->whereNotNull("{$prefix}period_start")
-                ->whereNotNull("{$prefix}period_end")
-                ->whereDate("{$prefix}period_start", '<=', $referenceDate->toDateString())
-                ->whereDate("{$prefix}period_end", '>=', $referenceDate->toDateString());
+                ->whereDate("{$prefix}period_start", '>=', $period['start']->toDateString())
+                ->whereDate("{$prefix}period_end", '<=', $period['end']->toDateString());
         }
 
         return $query
@@ -308,12 +341,20 @@ class PanenPoinController extends Controller
         \Log::info('Request URI: ' . $request->getRequestUri());
         \Log::info('Filter Tanggal: ' . $request->tanggal);
         
-        try {
+try {
             $user = auth()->user();
             $relatedRedeemUserIds = $this->relatedRedeemUserIds($user);
-            \Log::info('Starting calculatePanenPoinData...');
-            $data = $this->calculatePanenPoinData($request->tanggal);
+
+            // 1. Tentukan periode aktif dari tombol switcher (?period=p1 atau ?period=p2)
+            $selectedPeriod = $this->resolvePeriodKey($request->query('period'));
+            $periodsMeta = $this->periodsMeta();
+
+            // 2. Hitung leaderboard sesuai periode yang dipilih
+            $data = $this->calculatePanenPoinData($request->tanggal, $selectedPeriod);
+
+            // 3. Daftar hadiah tetap sama untuk Periode 1 dan Periode 2
             $prizes = PrizeV5::orderBy('point', 'desc')->get();
+
             if ($user) {
                 $date = $this->summaryReferenceDate();
                 $pointQuery = DB::table($this->summaryPanenPoinTable())
@@ -330,10 +371,12 @@ class PanenPoinController extends Controller
                     )
                     ->where('email_client', '=', Auth::user()->email_client);
 
-                $point = $this->applySummaryReferenceFilter($pointQuery, $date)->first();
+                // Filter poin user yang login sesuai periode terpilih
+                $point = $this->applySummaryReferenceFilter($pointQuery, $date, null, $selectedPeriod)->first();
             } else {
                 $point = 0;
             }
+
             $date = $this->summaryReferenceDate();
             $redeemCounts = $this->prizeRedeemsQuery()
                 ->select('prize_id', DB::raw('COUNT(*) as total'))
@@ -401,7 +444,7 @@ class PanenPoinController extends Controller
     }
     
     // Hitung data panen poin (ambil dari summary table)
-    private function calculatePanenPoinData($tanggal = null)
+private function calculatePanenPoinData($tanggal = null, ?string $periodKey = null)
     {
         try {
             \Log::info("=== READING FROM SUMMARY TABLE ===");
@@ -409,7 +452,6 @@ class PanenPoinController extends Controller
             $baseQuery = DB::table($this->summaryPanenPoinTable() . ' as s')
                 ->join($this->akunPanenPoinTable() . ' as u', 'u.email_client', '=', 's.email_client')
                 ->leftJoin('mitra_sbp', 's.email_client', '=', 'mitra_sbp.email_myads')
-                // Exclude email yang ada di mitra_sbp
                 ->whereNull('mitra_sbp.id')
                 ->select(
                     's.nama_canvasser',
@@ -423,19 +465,11 @@ class PanenPoinController extends Controller
                     DB::raw('(s.poin + s.poin_package) as total_poin'),
                     DB::raw($this->optionalColumn($this->summaryPanenPoinTable(), 'bulan', "''")),
                     'u.uuid',
-                    'u.nama_akun',
-                    // 'u.akun_myads_pelanggan',
-                    // 'u.nomor_hp_pelanggan',
-                    // 'u.nama_pelanggan'
+                    'u.nama_akun'
                 );
 
-            // Filter bulan
-            // if ($tanggal) {
-                $date = $this->summaryReferenceDate();
-                // $baseQuery->whereMonth('s.created_at', $date->month)
-                //         ->whereYear('s.created_at', $date->year);
-                
-                $this->applySummaryReferenceFilter($baseQuery, $date, 's');
+            $date = $this->summaryReferenceDate();
+            $this->applySummaryReferenceFilter($baseQuery, $date, 's', $periodKey);
             // }
             // Helper mapper
             $mapResult = function ($query) {
@@ -486,7 +520,6 @@ class PanenPoinController extends Controller
         }
     }
 
-    
     // Export ke Excel
     public function export(Request $request)
     {

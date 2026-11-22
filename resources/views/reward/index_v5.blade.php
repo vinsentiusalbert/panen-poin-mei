@@ -260,6 +260,28 @@
 @endif
 
 {{-- ================= TABLE ================= --}}
+
+@php
+    $activePeriod = $selectedPeriod ?? request('period', now()->gte(\Carbon\Carbon::create(2026, 12, 7)) ? 'p2' : 'p1');
+@endphp
+
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div class="btn-group" role="group" aria-label="Pilih Periode Panen Poin V5">
+        <a href="{{ request()->fullUrlWithQuery(['period' => 'p1']) }}"
+           class="btn {{ $activePeriod === 'p1' ? 'btn-warning text-dark fw-bold' : 'btn-outline-light' }}">
+            Periode 1 (13 Nov – 6 Des)
+        </a>
+        <a href="{{ request()->fullUrlWithQuery(['period' => 'p2']) }}"
+           class="btn {{ $activePeriod === 'p2' ? 'btn-warning text-dark fw-bold' : 'btn-outline-light' }}">
+            Periode 2 (7 Des – 31 Des)
+        </a>
+    </div>
+
+    <span class="prize-section-pill">
+        {{ $periodsMeta[$activePeriod]['range'] ?? ($activePeriod === 'p2' ? '7 Desember - 31 Desember 2026' : '13 November - 6 Desember 2026') }}
+    </span>
+</div>
+
 @php
     $leagueSections = [
         'poin_over_301' => ['title' => 'CHAMPION', 'range' => '> 301 Poin', 'class' => 'champion', 'liga' => 'Champion', 'medal' => 'medali 3-01.png'],
@@ -334,17 +356,15 @@
 </section>
 @endforeach
 
-
-
 {{-- ================= PRIZE ================= --}}
 <div class="section-card" id="prizes">
     <div class="prize-section-head mb-4">
         <div>
             <h4 class="mb-1">Hadiah yang Bisa Diredeem</h4>
-            <p class="prize-section-copy mb-0">Pilih hadiah favoritmu. Redeem aktif dari 13 November 2026 sampai 6 Desember 2026 dengan maksimal 2 hadiah per user.</p>
+            <p class="prize-section-copy mb-0">Pilih hadiah favoritmu. Redeem aktif dari 13 November 2026 sampai 31 Desember 2026 dengan maksimal 2 hadiah per user.</p>
         </div>
         <div class="prize-section-pill">
-            13 November - 6 Desember 2026
+            13 November - 31 Desember 2026
         </div>
     </div>
 
