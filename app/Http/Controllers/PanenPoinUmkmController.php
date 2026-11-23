@@ -40,30 +40,31 @@ class PanenPoinUmkmController extends Controller
     }
 
         private function leaderboard(string $key): array
-        {
-            return \Illuminate\Support\Facades\DB::table('summary_panen_poin_umkm as s')
-                ->join('akun_panen_poin_v4 as u', 'u.email_client', '=', 's.email_client')
-                ->where('s.period_key', $key)
-                ->selectRaw('u.nama_akun, s.email_client as email, s.nama_canvasser as canvasser,
-                            (s.poin + COALESCE(s.poin_package, 0)) as poin')
-                ->orderByDesc('poin')
-                ->limit(10)
-                ->get()
-                ->map(fn ($r) => (array) $r)
-                ->all();
-        }
+    {
+        return \Illuminate\Support\Facades\DB::table('summary_panen_poin_umkm as s')
+            ->join('akun_panen_poin_v4 as u', 'u.email_client', '=', 's.email_client')
+            ->where('s.period_key', $key)
+            ->selectRaw('u.nama_akun, s.email_client as email, s.nama_canvasser as canvasser,
+                        (s.poin + COALESCE(s.poin_package, 0)) as poin')
+            ->orderByDesc('poin')
+            ->limit(10)
+            ->get()
+            ->map(fn ($r) => (array) $r)
+            ->all();
+    }
 
-        private function prizes(string $key): array
-        {
-            return \App\Models\PrizeV4::orderByDesc('point')->get()
-                ->map(fn ($p) => [
-                    'name'  => $p->name,
-                    'img'   => basename($p->img),   // view sudah menambah 'hadiah/'
-                    'point' => $p->point,
-                    'stock' => $p->stock,
-                ])->all();
-        }
-
+private function prizes(string $key): array
+    {
+        return \Illuminate\Support\Facades\DB::table('prizes_umkm')
+            ->orderByDesc('point')
+            ->get()
+            ->map(fn ($p) => [
+                'name'  => $p->name,
+                'img'   => basename($p->img),   // view sudah menambah 'hadiah/'
+                'point' => $p->point,
+                'stock' => $p->stock,
+            ])->all();
+    }
     public function index()
     {
         $today = Carbon::today();
