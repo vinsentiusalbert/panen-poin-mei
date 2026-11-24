@@ -17,6 +17,11 @@ use App\Models\UserContactInfoV5;
 
 class PanenPoinController extends Controller
 {
+    private function hasUnlimitedRedeems($user): bool
+    {
+        return strtolower(trim($user->email_client ?? '')) === 'ptvidyateknologidigital1@gmail.com';
+    }
+
     private function emptyLeagueData(): array
     {
         return [
@@ -395,7 +400,8 @@ try {
                     ->orderByDesc('created_at')
                     ->get()
                 : collect();
-            $redeemPeriodLimit = 2;
+            $hasUnlimitedRedeems = $this->hasUnlimitedRedeems($user);
+            $redeemPeriodLimit = $hasUnlimitedRedeems ? null : 2;
             $today = Carbon::today();
             $redeemStartDate = $this->redeemStartDate();
             $redeemEndDate = $this->redeemEndDate();
@@ -428,6 +434,7 @@ try {
                 'redeemCounts',
                 'totalRedeemThisPeriod',
                 'redeemPeriodLimit',
+                'hasUnlimitedRedeems',
                 'isRedeemPeriod',
                 'isRedeemEnded',
                 'redeemStartDate',
@@ -452,7 +459,11 @@ private function calculatePanenPoinData($tanggal = null, ?string $periodKey = nu
             $baseQuery = DB::table($this->summaryPanenPoinTable() . ' as s')
                 ->join($this->akunPanenPoinTable() . ' as u', 'u.email_client', '=', 's.email_client')
                 ->leftJoin('mitra_sbp', 's.email_client', '=', 'mitra_sbp.email_myads')
-                ->whereNull('mitra_sbp.id')
+                ->where(function ($query) {
+                    // Pengecualian peserta yang diizinkan meskipun terdaftar sebagai mitra SBP.
+                    $query->whereNull('mitra_sbp.id')
+                        ->orWhere('s.email_client', 'ptvidyateknologidigital1@gmail.com');
+                })
                 ->select(
                     's.nama_canvasser',
                     's.email_client',
@@ -933,7 +944,7 @@ private function calculatePanenPoinData($tanggal = null, ?string $periodKey = nu
 
                 $redeemPeriodLimit = 2;
 
-                if ($redeemCountThisPeriod >= $redeemPeriodLimit) {
+                if (!$this->hasUnlimitedRedeems($user) && $redeemCountThisPeriod >= $redeemPeriodLimit) {
                     throw new \Exception("Anda sudah mencapai batas maksimal {$redeemPeriodLimit} redeem pada periode ini");
                 }
                 // Lock hadiah
@@ -952,7 +963,7 @@ private function calculatePanenPoinData($tanggal = null, ?string $periodKey = nu
                     ->whereBetween('created_at', [$this->redeemStartDate(), $this->redeemEndDate()])
                     ->exists();
 
-                if ($alreadyRedeemThisPrize) {
+                if (!$this->hasUnlimitedRedeems($user) && $alreadyRedeemThisPrize) {
                     throw new \Exception('Anda sudah pernah redeem hadiah ini');
                 }
 

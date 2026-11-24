@@ -56,6 +56,7 @@
             color: #fff;
         }
     </style>
+    <link rel="stylesheet" href="{{ asset('css/festive.css') }}?v=20261124-2">
 </head>
 
 <body>
@@ -105,6 +106,8 @@
         </div>
     </div>
 </nav>
+
+@include('partials.festive-banner')
 
 <!-- ================= LOGIN MODAL ================= -->
 <div class="modal fade modal-login" id="loginModal" tabindex="-1" aria-hidden="true">

@@ -1,0 +1,162 @@
+/* Shared Christmas 2026 / New Year 2027 theme. Loaded after each layout. */
+:root {
+    --pp-green: #17513e; --pp-green-dark: #0a3027;
+    --pp-green-rank-1: #377e5d; --pp-green-rank-2: #25694d; --pp-green-rank-3: #17513e;
+    --pp-gold: #e6c58a; --pp-gold-soft: #f6e5be; --pp-gold-deep: #845c24;
+    --pp-off-white: #fff9ed; --um-green: #17513e; --um-green-dark: #0a3027;
+    --um-gold: #e6c58a; --um-gold-soft: #f6e5be; --um-cream: #fff9ed;
+    --festive-red: #a92f42; --festive-cream: #fff9ed;
+}
+body {
+    background: radial-gradient(ellipse at 100% 10%, #5a2733 0, transparent 37%),
+        radial-gradient(ellipse at 0 42%, #1d5944 0, transparent 45%), #092d25;
+    color: var(--festive-cream);
+}
+body::before {
+    background-image: radial-gradient(circle, #f9e5b252 1px, transparent 1.8px), radial-gradient(circle, #ffffff24 1px, transparent 2px);
+    background-size: 91px 107px, 157px 173px; background-position: 20px 15px, 70px 55px;
+    opacity: .65;
+}
+body::after { background: none; }
+.navbar, .um-nav { background: #092d25f5; border-bottom: 1px solid #e6c58a40; }
+.reward-navbar-inner { background: transparent; box-shadow: none; border-color: transparent; }
+.reward-brand__text small, .um-brand small { color: #e6c58a; }
+.reward-login-trigger, .btn-login, .um-btn-green { background: #a92f42; color: #fff9ed; border-color: #a92f42; }
+.reward-login-trigger:hover, .btn-login:hover, .um-btn-green:hover { background: #842236; color: #fff; border-color: #842236; }
+.reward-link--pill, .reward-user-toggle { border-color: #e6c58a55; }
+.festive-banner {
+    position: relative; display: grid; grid-template-columns: 1.2fr 1fr; align-items: center;
+    gap: 24px; margin-top: 28px; margin-bottom: 32px; padding: 38px 48px;
+    border: 1px solid #e6c58a55; border-radius: 26px; overflow: hidden;
+    background: radial-gradient(ellipse at 80% 50%, #33785b70, transparent 60%), linear-gradient(115deg, #113d30, #082a23);
+    box-shadow: 0 24px 60px #031c2040; color: #fff9ed;
+}
+.festive-banner::before {
+    content: ''; position: absolute; inset: 7px; border: 1px solid #e6c58a20;
+    border-radius: 20px; pointer-events: none;
+}
+.festive-banner__copy { position: relative; z-index: 1; }
+.festive-eyebrow { display: block; font-size: .7rem; font-weight: 700; letter-spacing: .24em; color: #e6c58a; margin-bottom: 20px; }
+.festive-banner h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: clamp(2.2rem, 4.2vw, 3.9rem); line-height: 1.13; letter-spacing: -.04em; margin: 0 0 22px; color: #fff9ed; }
+.festive-banner h1 em { color: #e6c58a; font-weight: 400; }
+.festive-banner p { color: #d5e1d8; font-size: .95rem; line-height: 1.8; margin-bottom: 25px; max-width: 470px; }
+.festive-year { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 14px; font-size: .68rem; letter-spacing: .14em; font-weight: 700; color: #f6e5be; padding: 10px 16px; border: 1px solid #e6c58a55; border-radius: 30px; }
+.festive-year span { color: #e6c58a; }
+.festive-banner__art { width: 100%; height: auto; max-height: 370px; object-fit: contain; }
+.world-cup-hero-decor, .eid-stars { display: none; }
+.section-card { background: linear-gradient(130deg, #174c3c, #10392f); border: 1px solid #e6c58a40; box-shadow: 0 18px 38px #001c2033; }
+.section-card:first-of-type::before { background-image: url('../assets/festive-celebration.svg'); opacity: .1; }
+.section-card .text-muted { color: #c4d6cb !important; }
+.modal-content .text-muted { color: #637168 !important; }
+.ranking-board__paper { background: linear-gradient(135deg, #fffcf4, #f4ead6); border: 1px solid #e6c58a; box-shadow: 0 24px 50px #001e2040; }
+.ranking-board__paper::after { background: url('../assets/festive-celebration.svg') right bottom / 210px auto no-repeat; opacity: .09; }
+.ranking-board__paper::before { background: radial-gradient(circle at 5% 5%, #e6c58a70, transparent 30%); opacity: .7; }
+.ranking-board__edge { background: #a92f42; opacity: .5; }
+.ranking-board__hero-title { color: #17513e; }
+.ranking-board--champion .ranking-board__hero-title { color: #8c2639; }
+.ranking-board__header { color: #fff9ed; background: #154c3b; border-radius: 12px; }
+.ranking-row { background: #fffdf8; border-color: #dbcaa7; }
+.ranking-row--podium-1 { background: linear-gradient(90deg, #f6e5be, #fffaf0); }
+.ranking-board--champion .ranking-board__hero-pill, .ranking-board--champion .ranking-row__liga { background: #a92f42; color: #fff9ed; }
+.prize-card { background: linear-gradient(160deg, #245b46, #103a30); border: 1px solid #e6c58a60; box-shadow: 0 14px 30px #001c2033; }
+.prize-card:hover { border-color: #e6c58a; box-shadow: 0 16px 36px #001c2066; }
+.prize-card--soldout { border-color: #8a9a8f60; }
+.prize-card--redeemed { border-color: #7baa88; }
+.prize-redeem-btn:not(:disabled):not(.prize-redeem-btn--disabled):not(.prize-redeem-btn--secondary) { background: #a92f42; color: #fff9ed; border-color: #c95966; }
+.prize-redeem-btn:not(:disabled):not(.prize-redeem-btn--disabled):hover { background: #842236; color: #fff9ed; }
+.btn-contact, .um-btn-gold { background: #e6c58a; color: #302612; border-color: #e6c58a; }
+.btn-contact:hover, .um-btn-gold:hover { background: #f6e5be; color: #302612; border-color: #f6e5be; }
+.modal-login .modal-content, .contact-modal .modal-content, .um-modal { background: #fff9ed; color: #183d30; border: 1px solid #e6c58a; border-radius: 20px; }
+.contact-modal .modal-header, .contact-modal .modal-footer { border-color: #dfd4bc; }
+.contact-modal .form-label, .contact-modal .modal-title { color: #183d30; }
+.contact-modal .btn-close { filter: none; }
+.contact-modal .btn-outline-light { color: #17513e; border-color: #17513e; }
+.contact-modal .form-control, .form-login, .um-input { background: #fffefa; color: #173b2d; border-color: #d7ccb5; }
+.form-control:focus { border-color: #a92f42; box-shadow: 0 0 0 .2rem #a92f4220; }
+.redeem-history-card, .shipping-status-card { background: #103a30; border-color: #e6c58a40; }
+.table-transparent { --bs-table-bg: transparent; --bs-table-color: #fff9ed; --bs-table-border-color: #e6c58a30; }
+.table-transparent thead { background: #a92f4240; }
+.um-body { background: #fff9ed; color: #173b2d; }
+.um-body .festive-banner { box-shadow: 0 20px 40px #143c2e15; }
+.um-hero { background: linear-gradient(120deg, #143e31, #1d5842); padding-top: 40px; }
+.um-hero__title { font-family: Georgia, 'Times New Roman', serif; }
+.um-card, .um-period, .um-prize { border-color: #dfd4bc; }
+.um-table__row--head { background: #a92f42; }
+.um-footer { background: #0a3027; color: #f6e5be; }
+:focus-visible { outline: 3px solid #e6c58a; outline-offset: 4px; }
+@media (max-width: 767px) {
+    .festive-banner { width: calc(100% - 24px); grid-template-columns: 1fr; gap: 0; padding: 30px 24px 14px; margin-top: 16px; border-radius: 20px; }
+    .festive-banner__art { max-height: 230px; margin-top: 8px; }
+    .festive-banner h1 { font-size: clamp(2rem, 8vw, 3rem); }
+    .festive-eyebrow { font-size: .62rem; letter-spacing: .17em; }
+    .festive-banner p { font-size: .88rem; }
+    .festive-year { font-size: .59rem; gap: 9px; padding: 9px 12px; }
+    .reward-navbar-inner { gap: 8px; padding-inline: 0; }
+    .reward-brand__text strong { font-size: .78rem; }
+    .reward-brand__text small { font-size: .62rem; }
+    .reward-user-toggle__label { max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+/* An isolated layer keeps the decoration behind content and Bootstrap modals. */
+body { isolation: isolate; }
+.festive-background {
+    position: fixed; inset: 0; z-index: -1; overflow: hidden;
+    pointer-events: none; contain: strict;
+}
+.festive-snow {
+    position: absolute; top: -12px; left: var(--x);
+    width: var(--size); height: var(--size); border-radius: 50%;
+    background: #fff8e8; opacity: 0;
+    animation: festive-snowfall var(--duration) var(--delay) linear infinite;
+}
+.festive-sparkle {
+    position: absolute; left: var(--x); top: var(--y); width: 9px; height: 9px;
+    background: #edcf8e;
+    clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+    animation: festive-twinkle 5s var(--delay) ease-in-out infinite;
+}
+.festive-firework {
+    position: absolute; width: 5px; height: 5px; border-radius: 50%; color: #ebcb87;
+    box-shadow: 0 -82px, 41px -71px, 71px -41px, 82px 0, 71px 41px, 41px 71px,
+        0 82px, -41px 71px, -71px 41px, -82px 0, -71px -41px, -41px -71px,
+        18px -43px, 43px -18px, 43px 18px, 18px 43px, -18px 43px, -43px 18px, -43px -18px, -18px -43px;
+    opacity: 0; animation: festive-burst 10s ease-out infinite;
+}
+.festive-firework--one { left: 8%; top: 28%; animation-delay: -2s; }
+.festive-firework--two { right: 8%; top: 62%; color: #e3939e; animation-delay: -6s; }
+.festive-firework--three { left: 58%; top: 12%; animation-delay: -8s; }
+.um-body .festive-snow { background: #bfa16b; }
+.um-body .festive-sparkle, .um-body .festive-firework { color: #a57b35; }
+.festive-motion-toggle {
+    position: fixed; bottom: 14px; right: 14px; z-index: 100;
+    border: 1px solid #e6c58a70; border-radius: 24px; padding: 9px 14px;
+    background: #0a3027; color: #f6e5be; font-size: .75rem;
+    box-shadow: 0 3px 14px #001c2030;
+}
+.festive-motion-toggle:hover { background: #17513e; }
+.festive-motion-paused .festive-background *,
+.festive-tab-hidden .festive-background * { animation-play-state: paused; }
+@keyframes festive-snowfall {
+    0% { transform: translate3d(0, -12px, 0); opacity: 0; }
+    8% { opacity: .65; }
+    88% { opacity: .45; }
+    100% { transform: translate3d(var(--drift), calc(100vh + 24px), 0); opacity: 0; }
+}
+@keyframes festive-twinkle {
+    0%, 100% { opacity: .12; transform: scale(.65) rotate(0); }
+    50% { opacity: .7; transform: scale(1.15) rotate(35deg); }
+}
+@keyframes festive-burst {
+    0%, 55%, 100% { opacity: 0; transform: scale(.1); }
+    60% { opacity: .5; }
+    78% { opacity: 0; transform: scale(1.7) translateY(18px); }
+    99% { opacity: 0; transform: scale(1.7) translateY(18px); }
+}
+@media (max-width: 767px) {
+    .festive-snow:nth-child(n+15), .festive-firework--three { display: none; }
+    .festive-motion-toggle { bottom: max(10px, env(safe-area-inset-bottom)); right: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .festive-background, .festive-motion-toggle { display: none !important; }
+    *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+    .reward-navbar-inner, .prize-card, .scroll-animate, .ranking-board__hero, .ranking-board__medal, .ranking-board__header, .ranking-board__rows .ranking-row { opacity: 1 !important; transform: none !important; }
+}

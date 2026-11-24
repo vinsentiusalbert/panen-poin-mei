@@ -10,7 +10,7 @@ class AkunPanenPoin extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    protected $table = 'akun_panen_poin_v4';
+    protected $table = 'akun_panen_poin_v5';
 
     protected $fillable = [
         'uuid',

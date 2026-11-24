@@ -30,23 +30,6 @@
 </div>
 @endif
 
-<div class="world-cup-hero-decor">
-    <img src="{{ asset('assets/world-cup-trophy.svg') }}" alt="" class="world-cup-hero-decor__trophy" aria-hidden="true">
-    <img src="{{ asset('assets/world-cup-ball.svg') }}" alt="" class="world-cup-hero-decor__ball" aria-hidden="true">
-</div>
-
-<div class="eid-stars eid-stars--left" aria-hidden="true">
-    <span class="eid-star eid-star--lg"></span>
-    <span class="eid-star eid-star--md"></span>
-    <span class="eid-star eid-star--sm"></span>
-</div>
-
-<div class="eid-stars eid-stars--right" aria-hidden="true">
-    <span class="eid-star eid-star--md"></span>
-    <span class="eid-star eid-star--lg"></span>
-    <span class="eid-star eid-star--sm"></span>
-</div>
-
 {{-- ================= LIGA ================= --}}
 @if(isset($point) && is_object($point) && isset($point->poin))
 <div class="section-card text-center mb-5">
@@ -361,7 +344,7 @@
     <div class="prize-section-head mb-4">
         <div>
             <h4 class="mb-1">Hadiah yang Bisa Diredeem</h4>
-            <p class="prize-section-copy mb-0">Pilih hadiah favoritmu. Redeem aktif dari 13 November 2026 sampai 31 Desember 2026 dengan maksimal 2 hadiah per user.</p>
+            <p class="prize-section-copy mb-0">Pilih hadiah favoritmu. Redeem aktif dari 13 November 2026 sampai 31 Desember 2026{{ ($hasUnlimitedRedeems ?? false) ? ' tanpa batas jumlah penukaran untuk akun Anda, selama poin dan stok tersedia.' : ' dengan maksimal 2 hadiah per user.' }}</p>
         </div>
         <div class="prize-section-pill">
             13 November - 31 Desember 2026
@@ -379,7 +362,7 @@
         $userCurrentPoint = (int) ($point->poin ?? 0);
         $pointEnough = $userCurrentPoint >= (int) $p->point;
         $limitReached = isset($totalRedeemThisPeriod, $redeemPeriodLimit) && $totalRedeemThisPeriod >= $redeemPeriodLimit;
-        $alreadyRedeemed = $redeemCount > 0;
+        $alreadyRedeemed = !($hasUnlimitedRedeems ?? false) && $redeemCount > 0;
         $redeemDisabled = $notLogin || !($isRedeemPeriod ?? false) || $outOfStock || !$pointEnough || !$hasContactInfo || $limitReached || $alreadyRedeemed;
         $redeemLabel = 'Redeem';
 

@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/panen-umkm.css') }}">
     @stack('styles')
+    <link rel="stylesheet" href="{{ asset('css/festive.css') }}?v=20261124-2">
 </head>
 <body class="um-body">
 
@@ -34,6 +35,8 @@
         </div>
     </div>
 </nav>
+
+@include('partials.festive-banner')
 
 <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">

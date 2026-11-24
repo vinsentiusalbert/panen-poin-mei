@@ -56,6 +56,7 @@
             color: #fff;
         }
     </style>
+    <link rel="stylesheet" href="{{ asset('css/festive.css') }}?v=20261124-2">
 </head>
 
 <body>
@@ -68,7 +69,7 @@
                 <img src="{{ asset('img/assets/myads.png') }}" height="28" alt="MyAds">
                 <span class="reward-brand__text">
                     <strong>Reward League V5</strong>
-                    <small>Festive Edition</small>
+                    <small>Natal & Tahun Baru</small>
                 </span>
             </a>
 
@@ -111,6 +112,8 @@
         </div>
     </div>
 </nav>
+
+@include('partials.festive-banner')
 
 <!-- ================= LOGIN MODAL ================= -->
 <div class="modal fade modal-login" id="loginModal" tabindex="-1" aria-hidden="true">
