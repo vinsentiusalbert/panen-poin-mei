@@ -9,50 +9,97 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Mengisi tabel summary_panen_poin_v5 untuk Panen Poin Utama V5 (13 Nov - 6 Des 2026).
+ * Mengisi tabel summary_panen_poin_v5 untuk Panen Poin Utama V5
+ * Periode 1 (13 Nov - 6 Des 2026) & Periode 2 (7 Des - 31 Des 2026).
  *
  * Pemakaian:
  *   php artisan panenpoin:refresh-v5
+ *   php artisan panenpoin:refresh-v5 --period=p1
+ *   php artisan panenpoin:refresh-v5 --period=p2
  */
 class RefreshV5Summary extends Command
 {
-    protected $signature = 'panenpoin:refresh-v5';
+    protected $signature = 'panenpoin:refresh-v5 {--period= : Periode target (p1 atau p2)}';
 
-    protected $description = 'Hitung ulang summary poin Panen Poin Utama V5 (13 Nov - 6 Des 2026)';
+    protected $description = 'Hitung ulang summary poin Panen Poin Utama V5 per periode';
 
     private const POINT_PER = 250000;
 
     public function handle(): int
     {
-        $startAt = Carbon::create(2026, 11, 13)->startOfDay();
-        $endAt   = Carbon::create(2026, 12, 6)->endOfDay();
+        $periodOption = $this->option('period');
+        $periodKey = in_array($periodOption, ['p1', 'p2'], true)
+            ? $periodOption
+            : (Carbon::today()->gte(Carbon::create(2026, 12, 7)) ? 'p2' : 'p1');
 
-        $start = $startAt->toDateString();
+        if ($periodKey === 'p2') {
+            $startAt = Carbon::create(2026, 12, 7)->startOfDay();
+            $endAt   = Carbon::create(2026, 12, 31)->endOfDay();
+            $periodeLabel = '7 Des - 31 Des 2026';
+        } else {
+            $startAt = Carbon::create(2026, 11, 13)->startOfDay();
+            $endAt   = Carbon::create(2026, 12, 6)->endOfDay();
+            $periodeLabel = '13 Nov - 6 Des 2026';
+        }
+
         // Jangan hitung melewati hari ini
-        $end   = Carbon::now()->min($endAt)->toDateString();
+        $endBound = Carbon::now()->min($endAt);
 
-        $this->info("Periode Panen Poin V5: {$start} s/d {$end}");
+        $this->info("Periode Panen Poin V5 [{$periodKey}]: {$startAt->toDateTimeString()} s/d {$endBound->toDateTimeString()}");
 
         $total = 0;
         $summaryTable = 'summary_panen_poin_v5';
+        $hasPeriodKey = Schema::hasColumn($summaryTable, 'period_key');
 
-        // Simpan poin_redeem dan poin_package yang sudah ada agar tidak hilang saat refresh
+        // Simpan poin_redeem dan poin_package yang sudah ada pada periode ini agar tidak hilang saat refresh
         $existingAdjustments = [];
         if (Schema::hasTable($summaryTable)) {
-            $existingAdjustments = DB::table($summaryTable)
-                ->select('email_client', 'poin_package', 'poin_redeem', 'remark')
+            $adjQuery = DB::table($summaryTable)
+                ->select('email_client', 'poin_package', 'poin_redeem', 'remark');
+
+            if ($hasPeriodKey) {
+                $adjQuery->where('period_key', $periodKey);
+            }
+
+            $existingAdjustments = $adjQuery
                 ->get()
                 ->keyBy(fn ($row) => strtolower(trim($row->email_client)))
                 ->toArray();
         }
 
-        DB::transaction(function () use ($start, $end, $startAt, $endAt, $summaryTable, $existingAdjustments, &$total) {
-            DB::table($summaryTable)->delete();
+        // Daftar email mitra_sbp untuk dikecualikan jika tabel ada
+        $mitraEmails = [];
+        if (Schema::hasTable('mitra_sbp')) {
+            $mitraEmails = DB::table('mitra_sbp')
+                ->whereNotNull('email_myads')
+                ->pluck('email_myads')
+                ->map(fn ($e) => strtolower(trim($e)))
+                ->flip()
+                ->toArray();
+        }
+
+        DB::transaction(function () use ($startAt, $endAt, $endBound, $periodKey, $periodeLabel, $summaryTable, $hasPeriodKey, $existingAdjustments, $mitraEmails, &$total) {
+            if ($hasPeriodKey) {
+                DB::table($summaryTable)->where('period_key', $periodKey)->delete();
+            } else {
+                DB::table($summaryTable)->delete();
+            }
 
             $canvassers = User::where('role', 'cvsr')->get();
 
             foreach ($canvassers as $canvasser) {
                 $clients = $this->clientsOf($canvasser->id);
+                if (empty($clients)) {
+                    continue;
+                }
+
+                // Kecualikan mitra_sbp
+                $clients = array_filter(
+                    $clients,
+                    fn ($hp, $email) => !isset($mitraEmails[$email]),
+                    ARRAY_FILTER_USE_BOTH
+                );
+
                 if (empty($clients)) {
                     continue;
                 }
@@ -64,7 +111,7 @@ class RefreshV5Summary extends Command
                         DB::raw('LOWER(TRIM(email_client)) as email'),
                         DB::raw('SUM(CAST(total_settlement_klien AS DECIMAL(15,2))) as total')
                     )
-                    ->whereBetween('tgl_transaksi', [$start, $end])
+                    ->whereBetween('tgl_transaksi', [$startAt->toDateTimeString(), $endBound->toDateTimeString()])
                     ->whereNotNull('total_settlement_klien')
                     ->whereIn(DB::raw('LOWER(TRIM(email_client))'), $emails)
                     ->groupBy(DB::raw('LOWER(TRIM(email_client))'))
@@ -72,7 +119,7 @@ class RefreshV5Summary extends Command
                     ->toArray();
 
                 foreach ($clients as $email => $hp) {
-                    $settlement = $settlements[$email] ?? 0;
+                    $settlement = (float) ($settlements[$email] ?? 0);
                     $prev = $existingAdjustments[$email] ?? null;
                     $poinPackage = (int) ($prev->poin_package ?? 0);
                     $poinRedeem  = (int) ($prev->poin_redeem ?? 0);
@@ -82,6 +129,8 @@ class RefreshV5Summary extends Command
                     }
 
                     $poin = (int) floor($settlement / self::POINT_PER);
+                    $totalPoinLiga = $poin + $poinPackage;
+                    $remark = $this->resolveLeagueRemark($totalPoinLiga);
 
                     $row = [
                         'user_id'          => $canvasser->id,
@@ -92,22 +141,30 @@ class RefreshV5Summary extends Command
                         'poin_bulan_ini'   => $poin,
                         'poin_akumulasi'   => 0,
                         'poin'             => $poin,
-                        'bulan'            => $startAt->copy()->locale('id')->translatedFormat('F Y'),
                         'created_at'       => now(),
                         'updated_at'       => now(),
                     ];
 
+                    if ($hasPeriodKey) {
+                        $row['period_key'] = $periodKey;
+                    }
+                    if (Schema::hasColumn($summaryTable, 'bulan')) {
+                        $row['bulan'] = $startAt->copy()->locale('id')->translatedFormat('F Y');
+                    }
                     if (Schema::hasColumn($summaryTable, 'poin_package')) {
                         $row['poin_package'] = $poinPackage;
                     }
                     if (Schema::hasColumn($summaryTable, 'poin_redeem')) {
                         $row['poin_redeem'] = $poinRedeem;
                     }
-                    if (Schema::hasColumn($summaryTable, 'remark') && isset($prev->remark)) {
-                        $row['remark'] = $prev->remark;
+                    if (Schema::hasColumn($summaryTable, 'remark')) {
+                        $row['remark'] = $remark;
                     }
                     if (Schema::hasColumn($summaryTable, 'period_start')) {
                         $row['period_start'] = $startAt->toDateString();
+                    }
+                    if (Schema::hasColumn($summaryTable, 'periode_label')) {
+                        $row['periode_label'] = $periodeLabel;
                     }
                     if (Schema::hasColumn($summaryTable, 'period_end')) {
                         $row['period_end'] = $endAt->toDateString();
@@ -119,15 +176,43 @@ class RefreshV5Summary extends Command
             }
         });
 
-        $this->info("Selesai. {$total} baris disimpan ke {$summaryTable}.");
+        $this->info("Selesai. {$total} baris disimpan ke {$summaryTable} ({$periodKey}).");
 
         return self::SUCCESS;
     }
 
-    /** @return array<string,string> [email => nomor_hp] milik satu canvasser */
+    private function resolveLeagueRemark(int $totalPoin): ?string
+    {
+        if ($totalPoin >= 450) {
+            return 'Champion';
+        }
+        if ($totalPoin >= 100) {
+            return 'Rising Star';
+        }
+        if ($totalPoin >= 1) {
+            return 'Rookie';
+        }
+
+        return null;
+    }
+
+    /** @return array<string,string> [email => nomor_hp] gabungan user_panen_poin & leads_master */
     private function clientsOf(int $canvasserId): array
     {
         $clients = [];
+
+        $leads = DB::table('leads_master')
+            ->where('user_id', $canvasserId)
+            ->whereNotNull('email')
+            ->select('email', 'mobile_phone')
+            ->get();
+
+        foreach ($leads as $lead) {
+            $email = strtolower(trim($lead->email));
+            if ($email !== '') {
+                $clients[$email] = $lead->mobile_phone ?? '-';
+            }
+        }
 
         $table = collect(['user_panen_poin', 'user_panen_poins'])
             ->first(fn ($t) => Schema::hasTable($t));
@@ -135,24 +220,16 @@ class RefreshV5Summary extends Command
         if ($table) {
             $panen = DB::table($table)
                 ->where('user_id', $canvasserId)
+                ->whereNotNull('akun_myads_pelanggan')
                 ->select('akun_myads_pelanggan', 'nomor_hp_pelanggan')
                 ->get();
 
-            if ($panen->isNotEmpty()) {
-                foreach ($panen as $row) {
-                    $clients[strtolower(trim($row->akun_myads_pelanggan))] = $row->nomor_hp_pelanggan;
+            foreach ($panen as $row) {
+                $email = strtolower(trim($row->akun_myads_pelanggan));
+                if ($email !== '') {
+                    $clients[$email] = $row->nomor_hp_pelanggan ?: ($clients[$email] ?? '-');
                 }
-                return $clients;
             }
-        }
-
-        $leads = DB::table('leads_master')
-            ->where('user_id', $canvasserId)
-            ->select('email', 'mobile_phone')
-            ->get();
-
-        foreach ($leads as $lead) {
-            $clients[strtolower(trim($lead->email))] = $lead->mobile_phone ?? '-';
         }
 
         return $clients;
