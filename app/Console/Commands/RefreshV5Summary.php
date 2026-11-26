@@ -118,10 +118,14 @@ class RefreshV5Summary extends Command
                     ->pluck('total', 'email')
                     ->toArray();
 
+                $packagePoints = $this->packagePointsOf($startAt, $endBound, $emails);
+
                 foreach ($clients as $email => $hp) {
                     $settlement = (float) ($settlements[$email] ?? 0);
                     $prev = $existingAdjustments[$email] ?? null;
-                    $poinPackage = (int) ($prev->poin_package ?? 0);
+                    $autoPkg = (int) ($packagePoints[$email] ?? 0);
+                    $prevPkg = (int) ($prev->poin_package ?? 0);
+                    $poinPackage = max($autoPkg, $prevPkg);
                     $poinRedeem  = (int) ($prev->poin_redeem ?? 0);
 
                     if ($settlement <= 0 && $poinPackage <= 0) {
@@ -233,5 +237,38 @@ class RefreshV5Summary extends Command
         }
 
         return $clients;
+    }
+
+    /** @return array<string,int> [email => total_poin_paket] pada rentang periode */
+    private function packagePointsOf(Carbon $startAt, Carbon $endBound, array $emails): array
+    {
+        if (empty($emails) || !Schema::hasTable('data_paket_seasonal')) {
+            return [];
+        }
+
+        // Daftar nama paket promo V5 dan nilai poinnya (case-insensitive)
+        $v5PackagePoints = [
+            'SMS BROADCAST 5JT' => 20,
+        ];
+
+        $rows = DB::table('data_paket_seasonal')
+            ->select(
+                DB::raw('LOWER(TRIM(email)) as email'),
+                DB::raw('UPPER(TRIM(name)) as pkg_name'),
+                DB::raw('COUNT(*) as qty')
+            )
+            ->whereBetween('created_at', [$startAt->toDateTimeString(), $endBound->toDateTimeString()])
+            ->whereIn(DB::raw('LOWER(TRIM(email))'), $emails)
+            ->whereIn(DB::raw('UPPER(TRIM(name))'), array_keys($v5PackagePoints))
+            ->groupBy(DB::raw('LOWER(TRIM(email))'), DB::raw('UPPER(TRIM(name))'))
+            ->get();
+
+        $result = [];
+        foreach ($rows as $r) {
+            $pts = $v5PackagePoints[$r->pkg_name] ?? 0;
+            $result[$r->email] = ($result[$r->email] ?? 0) + ($pts * (int) $r->qty);
+        }
+
+        return $result;
     }
 }
